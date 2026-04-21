@@ -20,7 +20,7 @@ let package = Package(
 	 dependencies: [
         .package(url: "https://github.com/ios-tooling/Suite", .upToNextMajor(from: "1.3.17")),
         .package(url: "https://github.com/ios-tooling/CloudVersion", .upToNextMajor(from: "0.1.0")),
-        .package(path: "../../../Frameworks/sharedSettings"),
+		  .package(url: "https://github.com/ios-tooling/SharedSettings", .upToNextMajor(from: "1.0.8")),
 	 ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
