@@ -1,6 +1,15 @@
 {
-  "originHash" : "355d30379e7d855ec6c13c822e01d3b91c36a2fb22b8427645dc75fc0c20e0fa",
+  "originHash" : "00fbffef9fb2f70ea66e9e611fa33b3187b30277569afd995e6deb4cf9a26dda",
   "pins" : [
+    {
+      "identity" : "cloudversion",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/CloudVersion",
+      "state" : {
+        "revision" : "5967d23e441f04b8cd7a1e11ca075812a6228226",
+        "version" : "0.1.0"
+      }
+    },
     {
       "identity" : "suite",
       "kind" : "remoteSourceControl",

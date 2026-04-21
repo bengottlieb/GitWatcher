@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "Internal",
 	 platforms: [
-				 .macOS(.v14),
-				 .iOS(.v14),
+				 .macOS(.v15),
+				 .iOS(.v17),
 				 .watchOS(.v10)
 		  ],
     products: [
@@ -18,14 +18,18 @@ let package = Package(
         ),
     ],
 	 dependencies: [
-		.package(url: "https://github.com/ios-tooling/Suite", .upToNextMajor(from: "1.3.17")),
+        .package(url: "https://github.com/ios-tooling/Suite", .upToNextMajor(from: "1.3.17")),
+        .package(url: "https://github.com/ios-tooling/CloudVersion", .upToNextMajor(from: "0.1.0")),
+        .package(path: "../../../Frameworks/sharedSettings"),
 	 ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Internal", dependencies: [
-					.product(name: "Suite", package: "Suite"),
+                .product(name: "Suite", package: "Suite"),
+                .product(name: "CloudVersion", package: "CloudVersion"),
+                .product(name: "SharedSettings", package: "SharedSettings"),
 			 ]
         ),
 		  .testTarget(
