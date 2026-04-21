@@ -12,7 +12,6 @@
 
 /* Begin PBXFileReference section */
 		B5D682742F97912E0052C507 /* GitWatcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GitWatcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B5E151F92F979F8300D29732 /* sharedSettings */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = sharedSettings; path = /Users/ben/Documents/ManagedProjects/Frameworks/sharedSettings; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -38,7 +37,6 @@
 		B5D6826B2F97912E0052C507 = {
 			isa = PBXGroup;
 			children = (
-				B5E151F92F979F8300D29732 /* sharedSettings */,
 				B5D682762F97912E0052C507 /* GitWatcher */,
 				B5D682752F97912E0052C507 /* Products */,
 			);
