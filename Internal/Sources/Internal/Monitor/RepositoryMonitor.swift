@@ -33,6 +33,7 @@ public final class RepositoryMonitor {
 	public static let autoRefreshInterval: Duration = .seconds(15 * 60)
 
 	private init() {
+		Self.migrateRepositoriesToCloudIfNeeded()
 		self.repositories = SharedSettings[RepositoriesKey.self]
 		self.whitelist = SharedSettings[WhitelistKey.self]
 		externalChangeToken = NotificationCenter.default.addObserver(
@@ -169,10 +170,38 @@ public final class RepositoryMonitor {
 	}
 
 	private func reloadCloudValues(changedKeys: [String]?) {
-		if changedKeys == nil || changedKeys?.contains(WhitelistKey.name) == true {
+		let affects = { (name: String) in
+			changedKeys == nil || changedKeys?.contains(name) == true
+		}
+		if affects(WhitelistKey.name) {
 			suppressPersist = true
 			whitelist = SharedSettings[WhitelistKey.self]
 			suppressPersist = false
 		}
+		if affects(RepositoriesKey.name) {
+			applyRemoteRepositories(SharedSettings[RepositoriesKey.self])
+		}
+	}
+
+	private func applyRemoteRepositories(_ updated: [Repository]) {
+		let newIDs = Set(updated.map(\.id))
+		let existingIDs = Set(repositories.map(\.id))
+		repositories = updated
+		statuses = statuses.filter { newIDs.contains($0.key) }
+		let added = newIDs.subtracting(existingIDs)
+		for id in added {
+			Task { await self.refresh(repositoryID: id) }
+		}
+	}
+
+	private static func migrateRepositoriesToCloudIfNeeded() {
+		let existing = SharedSettings[RepositoriesKey.self]
+		guard existing.isEmpty else { return }
+		let defaults = UserDefaults.standard
+		guard let data = defaults.data(forKey: RepositoriesKey.name),
+		      let legacy = try? JSONDecoder().decode([Repository].self, from: data),
+		      !legacy.isEmpty else { return }
+		SharedSettings[RepositoriesKey.self] = legacy
+		defaults.removeObject(forKey: RepositoriesKey.name)
 	}
 }

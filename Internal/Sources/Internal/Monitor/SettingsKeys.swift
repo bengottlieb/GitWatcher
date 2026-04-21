@@ -19,5 +19,5 @@ public struct WhitelistKey: SettingsKey {
 public struct RepositoriesKey: SettingsKey {
 	public static let defaultValue: [Repository] = []
 	public static let name = "GitWatcher.repositories"
-	public static let location: SettingsLocation = .userDefaults
+	public static let location: SettingsLocation = .cloudKit
 }
