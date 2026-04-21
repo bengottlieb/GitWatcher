@@ -27,7 +27,7 @@ struct RepositoryRowView: View {
 				Spacer(minLength: 8)
 			}
 			.contentShape(Rectangle())
-			.onTapGesture { openInTower() }
+			.onTapGesture { RepositoryOpener.openInTower(repository) }
 			.help("Click to open in Tower")
 			RowActionsView(repository: repository, status: status, monitor: monitor)
 		}
@@ -36,11 +36,11 @@ struct RepositoryRowView: View {
 			Button("Refresh") {
 				Task { await monitor.refresh(repositoryID: repository.id) }
 			}
-			if let projectURL = xcodeProjectURL {
+			if let projectURL = RepositoryOpener.xcodeProjectURL(for: repository) {
 				Button("Open Project") { NSWorkspace.shared.open(projectURL) }
 			}
-			if packageFileURL != nil {
-				Button("Open Package") { openPackageInXcode() }
+			if RepositoryOpener.packageFileURL(for: repository) != nil {
+				Button("Open Package") { RepositoryOpener.openPackage(for: repository) }
 			}
 			Button("Reveal in Finder") {
 				NSWorkspace.shared.activateFileViewerSelecting([repository.url])
@@ -50,48 +50,6 @@ struct RepositoryRowView: View {
 				monitor.removeRepository(id: repository.id)
 			}
 		}
-	}
-
-	private var xcodeProjectURL: URL? {
-		let contents = try? FileManager.default.contentsOfDirectory(
-			at: repository.url,
-			includingPropertiesForKeys: nil,
-			options: [.skipsHiddenFiles]
-		)
-		return contents?.first { $0.pathExtension == "xcodeproj" }
-	}
-
-	private var packageFileURL: URL? {
-		let url = repository.url.appending(path: "Package.swift")
-		return FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) ? url : nil
-	}
-
-	private func openPackageInXcode() {
-		let xcode = URL(fileURLWithPath: "/Applications/Xcode.app")
-		guard FileManager.default.fileExists(atPath: xcode.path(percentEncoded: false)) else {
-			if let url = packageFileURL { NSWorkspace.shared.open(url) }
-			return
-		}
-		NSWorkspace.shared.open(
-			[repository.url],
-			withApplicationAt: xcode,
-			configuration: NSWorkspace.OpenConfiguration(),
-			completionHandler: nil
-		)
-	}
-
-	private func openInTower() {
-		let tower = URL(fileURLWithPath: "/Applications/Tower.app")
-		guard FileManager.default.fileExists(atPath: tower.path(percentEncoded: false)) else {
-			NSWorkspace.shared.activateFileViewerSelecting([repository.url])
-			return
-		}
-		NSWorkspace.shared.open(
-			[repository.url],
-			withApplicationAt: tower,
-			configuration: NSWorkspace.OpenConfiguration(),
-			completionHandler: nil
-		)
 	}
 }
 
