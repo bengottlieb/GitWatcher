@@ -36,6 +36,10 @@ struct RepositoryRowView: View {
 			Button("Refresh") {
 				Task { await monitor.refresh(repositoryID: repository.id) }
 			}
+			Button("Reveal in Finder") {
+				NSWorkspace.shared.activateFileViewerSelecting([repository.url])
+			}
+			Divider()
 			Button("Remove", role: .destructive) {
 				monitor.removeRepository(id: repository.id)
 			}
