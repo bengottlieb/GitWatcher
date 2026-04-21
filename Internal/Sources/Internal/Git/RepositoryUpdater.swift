@@ -13,28 +13,31 @@ struct RepositoryUpdater: Sendable {
 
 	func update() async -> RepositoryStatus {
 		var status = await RepositoryInspector(repository: repository).checkStatus()
-
-		guard status.kind != .error, status.kind != .noRemote else { return status }
-		let branch = status.branch
-		let remote = status.remote
-		guard !remote.isEmpty else { return status }
+		if status.kind == .error { return status }
 
 		let dirty = (try? await runner.dirtyFiles()) ?? []
 		let allWhitelisted = !dirty.isEmpty && dirty.allSatisfy { isWhitelisted($0) }
 
-		do {
-			if status.remoteAhead > 0, dirty.isEmpty, status.localAhead == 0 {
-				try await runner.pull(remote: remote, branch: branch)
-				return await reinspect(kind: .pulled, priorRemote: status.remoteAhead)
+		if !status.remote.isEmpty, status.kind != .noRemote {
+			do {
+				if status.remoteAhead > 0, dirty.isEmpty, status.localAhead == 0 {
+					try await runner.pull(remote: status.remote, branch: status.branch)
+					return await reinspect(kind: .pulled, priorRemote: status.remoteAhead)
+				}
+				if status.remoteAhead > 0, allWhitelisted, status.localAhead == 0 {
+					try await runner.discard(files: dirty)
+					try await runner.pull(remote: status.remote, branch: status.branch)
+					return await reinspect(kind: .discardedAndPulled, priorRemote: status.remoteAhead)
+				}
+			} catch {
+				status.kind = .error
+				status.message = (error as? GitError)?.stderr ?? error.localizedDescription
+				return status
 			}
-			if status.remoteAhead > 0, allWhitelisted, status.localAhead == 0 {
-				try await runner.discard(files: dirty)
-				try await runner.pull(remote: remote, branch: branch)
-				return await reinspect(kind: .discardedAndPulled, priorRemote: status.remoteAhead)
-			}
-		} catch {
-			status.kind = .error
-			status.message = (error as? GitError)?.stderr ?? error.localizedDescription
+		}
+
+		if allWhitelisted {
+			status = treatDirtyAsClean(status)
 		}
 		return status
 	}
@@ -49,12 +52,31 @@ struct RepositoryUpdater: Sendable {
 			status.message = (error as? GitError)?.stderr ?? error.localizedDescription
 			return status
 		}
-		return await RepositoryInspector(repository: repository).checkStatus()
+		var refreshed = await RepositoryInspector(repository: repository).checkStatus()
+		let dirty = (try? await runner.dirtyFiles()) ?? []
+		if !dirty.isEmpty, dirty.allSatisfy({ isWhitelisted($0) }) {
+			refreshed = treatDirtyAsClean(refreshed)
+		}
+		return refreshed
 	}
 
 	private func isWhitelisted(_ file: DirtyFile) -> Bool {
 		let name = file.basename
 		return whitelist.contains { $0 == name || $0 == file.path }
+	}
+
+	private func treatDirtyAsClean(_ status: RepositoryStatus) -> RepositoryStatus {
+		var updated = status
+		if status.localAhead > 0, status.remoteAhead > 0 {
+			updated.kind = .diverged
+		} else if status.localAhead > 0 {
+			updated.kind = .needsPush
+		} else if status.remote.isEmpty {
+			updated.kind = .noRemote
+		} else {
+			updated.kind = .clean
+		}
+		return updated
 	}
 
 	private func reinspect(kind: RepositoryStatus.Kind, priorRemote: Int) async -> RepositoryStatus {
