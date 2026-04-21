@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	static weak var shared: AppDelegate?
 
 	var openMainWindow: (() -> Void)?
+	var openSettings: (() -> Void)?
 
 	private var statusItem: NSStatusItem?
 	private var popover: NSPopover?
@@ -128,6 +129,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		menu.addItem(.separator())
 
+		let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings(_:)), keyEquivalent: ",")
+		settingsItem.target = self
+		menu.addItem(settingsItem)
+
+		menu.addItem(.separator())
+
 		menu.addItem(
 			withTitle: "Quit GitWatcher",
 			action: #selector(NSApplication.terminate(_:)),
@@ -151,6 +158,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	@objc private func refreshAll() {
 		Task { @MainActor in
 			await RepositoryMonitor.shared.refreshAll()
+		}
+	}
+
+	@objc private func showSettings(_ sender: Any?) {
+		NSApp.activate(ignoringOtherApps: true)
+		if let openSettings {
+			openSettings()
+			return
+		}
+		showMainWindow(nil)
+		DispatchQueue.main.async { [weak self] in
+			self?.openSettings?()
 		}
 	}
 }

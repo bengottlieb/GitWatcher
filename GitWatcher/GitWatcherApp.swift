@@ -14,8 +14,13 @@ struct GitWatcherApp: App {
 		Window("GitWatcher", id: WindowID.main) {
 			RepositoriesScreen()
 				.background(WindowOpenerBridgeView())
+				.background(SettingsOpenerBridgeView())
 		}
 		.defaultSize(width: 640, height: 420)
+
+		Settings {
+			SettingsScreen()
+		}
 	}
 }
 
@@ -32,6 +37,20 @@ private struct WindowOpenerBridgeView: View {
 			.onAppear {
 				AppDelegate.shared?.openMainWindow = {
 					openWindow(id: WindowID.main)
+				}
+			}
+	}
+}
+
+private struct SettingsOpenerBridgeView: View {
+	@Environment(\.openSettings) private var openSettings
+
+	var body: some View {
+		Color.clear
+			.frame(width: 0, height: 0)
+			.onAppear {
+				AppDelegate.shared?.openSettings = {
+					openSettings()
 				}
 			}
 	}
