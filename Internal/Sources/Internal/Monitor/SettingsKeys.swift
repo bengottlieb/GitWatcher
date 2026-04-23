@@ -21,3 +21,9 @@ public struct RepositoriesKey: SettingsKey {
 	public static let name = "GitWatcher.repositories"
 	public static let location: SettingsLocation = .cloudKit
 }
+
+public struct SortModeKey: SettingsKey {
+	public static let defaultValue: SortMode = .alphabetical
+	public static let name = "GitWatcher.sortMode"
+	public static let location: SettingsLocation = .userDefaults
+}

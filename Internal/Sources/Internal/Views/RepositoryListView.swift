@@ -7,37 +7,77 @@ import SwiftUI
 
 struct RepositoryListView: View {
 	let monitor: RepositoryMonitor
+	let sortMode: SortMode
 	@State private var selection: UUID?
 	@State private var typeAheadBuffer: String = ""
 	@State private var bufferResetTask: Task<Void, Never>?
+	@State private var displayOrder: [UUID] = []
 	@FocusState private var isListFocused: Bool
 	@Environment(\.controlActiveState) private var activeState
+
+	private var displayedRepos: [Repository] {
+		let byID = Dictionary(uniqueKeysWithValues: monitor.repositories.map { ($0.id, $0) })
+		var result = displayOrder.compactMap { byID[$0] }
+		let seen = Set(displayOrder)
+		result.append(contentsOf: monitor.repositories.filter { !seen.contains($0.id) })
+		return result
+	}
 
 	var body: some View {
 		Group {
 			if monitor.repositories.isEmpty {
 				EmptyRepositoriesView()
 			} else {
-				List(selection: $selection) {
-					ForEach(monitor.sortedRepositories) { repo in
-						RepositoryRowView(
-							repository: repo,
-							status: monitor.status(for: repo),
-							monitor: monitor
-						)
-						.tag(repo.id)
+				ScrollViewReader { proxy in
+					List(selection: $selection) {
+						ForEach(displayedRepos) { repo in
+							RepositoryRowView(
+								repository: repo,
+								status: monitor.status(for: repo),
+								monitor: monitor
+							)
+							.tag(repo.id)
+						}
+						.onDelete(perform: deleteRepositories)
 					}
-					.onDelete(perform: deleteRepositories)
-				}
-				.tint(.accentColor.opacity(0.35))
-				.focused($isListFocused)
-				.onKeyPress(phases: .down, action: handleKeyPress)
-				.onAppear { focusListSoon() }
-				.onChange(of: activeState) { _, new in
-					if new == .key { focusListSoon() }
+					.tint(.accentColor.opacity(0.35))
+					.focused($isListFocused)
+					.onKeyPress(phases: .down, action: handleKeyPress)
+					.onAppear {
+						rebuildOrder()
+						scrollToTop(proxy: proxy)
+						focusListSoon()
+					}
+					.onChange(of: activeState) { _, new in
+						if new == .key { focusListSoon() }
+					}
+					.onChange(of: sortMode) { _, _ in
+						rebuildOrder()
+						scrollToTop(proxy: proxy)
+					}
+					.onChange(of: monitor.isRefreshing) { _, refreshing in
+						if !refreshing { rebuildOrder() }
+					}
+					.onChange(of: monitor.repositories) { _, _ in
+						if !monitor.isRefreshing { rebuildOrder() }
+					}
 				}
 			}
 		}
+	}
+
+	private func scrollToTop(proxy: ScrollViewProxy) {
+		Task { @MainActor in
+			try? await Task.sleep(for: .milliseconds(50))
+			guard let firstID = displayOrder.first else { return }
+			withAnimation(.easeOut(duration: 0.2)) {
+				proxy.scrollTo(firstID, anchor: .top)
+			}
+		}
+	}
+
+	private func rebuildOrder() {
+		displayOrder = monitor.sortedRepositories(mode: sortMode).map(\.id)
 	}
 
 	private func focusListSoon() {
@@ -48,9 +88,9 @@ struct RepositoryListView: View {
 	}
 
 	private func deleteRepositories(at offsets: IndexSet) {
-		let sorted = monitor.sortedRepositories
+		let displayed = displayedRepos
 		for index in offsets {
-			monitor.removeRepository(id: sorted[index].id)
+			monitor.removeRepository(id: displayed[index].id)
 		}
 	}
 
@@ -91,7 +131,7 @@ struct RepositoryListView: View {
 	private func selectFirstMatch() {
 		let prefix = typeAheadBuffer
 		guard !prefix.isEmpty else { return }
-		if let match = monitor.sortedRepositories.first(where: {
+		if let match = displayedRepos.first(where: {
 			$0.name.lowercased().hasPrefix(prefix)
 		}) {
 			selection = match.id

@@ -20,6 +20,7 @@ public struct RepositoryStatus: Sendable, Equatable, Codable {
 	public var remote: String = ""
 	public var message: String?
 	public var lastChecked: Date?
+	public var lastCommitDate: Date?
 
 	public static let unknown = RepositoryStatus()
 

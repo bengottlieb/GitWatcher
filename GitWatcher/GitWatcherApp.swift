@@ -17,6 +17,7 @@ struct GitWatcherApp: App {
 				.background(SettingsOpenerBridgeView())
 		}
 		.defaultSize(width: 640, height: 420)
+		.windowToolbarStyle(.unifiedCompact)
 
 		Settings {
 			SettingsScreen()

@@ -16,6 +16,7 @@ struct RepositoryInspector: Sendable {
 		do {
 			let branch = try await runner.currentBranch()
 			status.branch = branch
+			status.lastCommitDate = try? await runner.lastCommitDate()
 			guard let remote = try await runner.firstRemote() else {
 				let dirty = (try? await runner.dirtyFiles()) ?? []
 				status.dirtyFiles = dirty.map(\.path)

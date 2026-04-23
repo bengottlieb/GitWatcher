@@ -3,6 +3,7 @@
 //  Internal
 //
 
+import SharedSettings
 import SwiftUI
 
 public struct RepositoriesScreen: View {
@@ -11,13 +12,14 @@ public struct RepositoriesScreen: View {
 	@State private var isPickingFolder = false
 	@State private var showingWhitelist = false
 	@State private var isDropTargeted = false
+	@Setting(SortModeKey.self) private var sortMode
 	@Environment(\.controlActiveState) private var activeState
 
 	public init() {}
 
 	public var body: some View {
 		VStack(spacing: 0) {
-			RepositoryListView(monitor: monitor)
+			RepositoryListView(monitor: monitor, sortMode: sortMode)
 			Divider()
 			RepositoriesToolbar(
 				monitor: monitor,
@@ -27,6 +29,11 @@ public struct RepositoriesScreen: View {
 		}
 		.environment(\.isOptionKeyHeld, optionKey.isHeld)
 		.frame(minWidth: 480, minHeight: 320)
+		.toolbar {
+			ToolbarItem(placement: .navigation) {
+				SortModePickerView()
+			}
+		}
 		.onChange(of: activeState) { _, newValue in
 			if newValue == .key {
 				Task { await monitor.refreshAll() }

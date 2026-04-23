@@ -24,6 +24,13 @@ struct RepositoryRowView: View {
 					.font(.caption)
 					.foregroundStyle(status.tint)
 					.lineLimit(1)
+				if let syncLabel {
+					Text("·").font(.caption).foregroundStyle(.secondary)
+					Text(syncLabel)
+						.font(.caption)
+						.foregroundStyle(.secondary)
+						.lineLimit(1)
+				}
 				Spacer(minLength: 8)
 			}
 			.contentShape(Rectangle())
@@ -50,6 +57,11 @@ struct RepositoryRowView: View {
 				monitor.removeRepository(id: repository.id)
 			}
 		}
+	}
+
+	private var syncLabel: String? {
+		guard let date = status.lastCommitDate else { return nil }
+		return LastSyncFormatting.label(for: date)
 	}
 }
 

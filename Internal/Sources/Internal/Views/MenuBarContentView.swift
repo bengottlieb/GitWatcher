@@ -14,6 +14,13 @@ public struct MenuBarContentView: View {
 
 	public var body: some View {
 		VStack(spacing: 0) {
+			HStack {
+				SortModePickerView()
+				Spacer()
+			}
+			.padding(.horizontal, 10)
+			.padding(.top, 8)
+			.padding(.bottom, 4)
 			RepositoriesScreen()
 			Divider()
 			MenuBarAppBar(openWindow: openWindow)

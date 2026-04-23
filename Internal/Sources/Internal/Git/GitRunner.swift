@@ -23,6 +23,13 @@ struct GitRunner: Sendable {
 		return out.trimmingCharacters(in: .whitespacesAndNewlines)
 	}
 
+	func lastCommitDate() async throws -> Date? {
+		let out = try await run("log", "-1", "--format=%ct")
+		let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard let seconds = TimeInterval(trimmed) else { return nil }
+		return Date(timeIntervalSince1970: seconds)
+	}
+
 	func fetch(remote: String) async throws {
 		_ = try await run("fetch", "--quiet", "--prune", remote)
 	}
