@@ -142,7 +142,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -eu\nAPP_NAME=\"${PRODUCT_NAME}.app\"\nSRC=\"${BUILT_PRODUCTS_DIR}/${APP_NAME}\"\nDEST_DIR=\"/Applications\"\nDEST=\"${DEST_DIR}/${APP_NAME}\"\nif [ ! -d \"$SRC\" ]; then\n    echo \"warning: source app not found at $SRC\"\n    exit 0\nfi\nif [ ! -w \"$DEST_DIR\" ]; then\n    echo \"warning: $DEST_DIR is not writable by $(whoami); skipping install\"\n    exit 0\nfi\nif [ -d \"$DEST\" ]; then\n    rm -rf \"$DEST\"\nfi\nditto \"$SRC\" \"$DEST\"\necho \"Installed $APP_NAME to $DEST_DIR\"\n";
+			shellScript = "set -eu\nAPP_NAME=\"${PRODUCT_NAME}.app\"\nSRC=\"${BUILT_PRODUCTS_DIR}/${APP_NAME}\"\nDEST_DIR=\"/Applications\"\nDEST=\"${DEST_DIR}/${APP_NAME}\"\nif [ ! -d \"$SRC\" ]; then\n    echo \"warning: source app not found at $SRC\"\n    exit 0\nfi\nif [ ! -w \"$DEST_DIR\" ]; then\n    echo \"warning: $DEST_DIR is not writable by $(whoami); skipping install\"\n    exit 0\nfi\nif [ -d \"$DEST\" ]; then\n    rm -rf \"$DEST\"\nfi\nsleep .5\nditto \"$SRC\" \"$DEST\"\necho \"Installed $APP_NAME to $DEST_DIR\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
