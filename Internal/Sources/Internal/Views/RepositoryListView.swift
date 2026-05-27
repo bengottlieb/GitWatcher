@@ -19,13 +19,13 @@ struct RepositoryListView: View {
 		let byID = Dictionary(uniqueKeysWithValues: monitor.repositories.map { ($0.id, $0) })
 		var result = displayOrder.compactMap { byID[$0] }
 		let seen = Set(displayOrder)
-		result.append(contentsOf: monitor.repositories.filter { !seen.contains($0.id) })
+		result.append(contentsOf: monitor.repositories.filter { !seen.contains($0.id) && $0.existsOnDisk })
 		return result
 	}
 
 	var body: some View {
 		Group {
-			if monitor.repositories.isEmpty {
+			if displayedRepos.isEmpty {
 				EmptyRepositoriesView()
 			} else {
 				ScrollViewReader { proxy in

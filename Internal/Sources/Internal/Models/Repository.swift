@@ -22,4 +22,5 @@ public struct Repository: Identifiable, Codable, Hashable, Sendable {
 	public var url: URL { TildePath.expand(tildePath) }
 	public var name: String { url.lastPathComponent }
 	public var displayPath: String { tildePath }
+	public var existsOnDisk: Bool { FileManager.default.fileExists(atPath: url.path) }
 }

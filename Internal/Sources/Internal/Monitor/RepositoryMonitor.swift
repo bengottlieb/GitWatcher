@@ -108,16 +108,17 @@ public final class RepositoryMonitor {
 	}
 
 	public func sortedRepositories(mode: SortMode) -> [Repository] {
+		let existing = repositories.filter(\.existsOnDisk)
 		switch mode {
 		case .alphabetical:
-			return repositories.sorted { lhs, rhs in
+			return existing.sorted { lhs, rhs in
 				let lt = status(for: lhs).sortTier
 				let rt = status(for: rhs).sortTier
 				if lt != rt { return lt < rt }
 				return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
 			}
 		case .chronological:
-			return repositories.sorted { lhs, rhs in
+			return existing.sorted { lhs, rhs in
 				let lDate = status(for: lhs).lastCommitDate ?? .distantPast
 				let rDate = status(for: rhs).lastCommitDate ?? .distantPast
 				if lDate != rDate { return lDate > rDate }
