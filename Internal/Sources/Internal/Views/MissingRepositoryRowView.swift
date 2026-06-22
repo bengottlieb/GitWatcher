@@ -29,28 +29,44 @@ struct MissingRepositoryRowView: View {
 			if status.kind == .cloning {
 				ProgressView().controlSize(.small)
 			} else {
-				Button("Create") { createTapped() }
+				Button(actionTitle) { primaryActionTapped() }
 					.buttonStyle(.borderedProminent)
-					.help("Clone, check out, and update this repository")
+					.help(actionHelp)
 			}
 		}
 		.padding(.vertical, 1)
 		.contextMenu {
+			Button("Change Source URL…") { promptForURL() }
 			Button("Remove", role: .destructive) {
 				monitor.removeRepository(id: repository.id)
 			}
 		}
-		.alert("Clone Repository", isPresented: $isPrompting) {
+		.alert("Source URL", isPresented: $isPrompting) {
 			TextField("Remote URL", text: $urlText)
-			Button("Cancel", role: .cancel) {}
-			Button("Create") { startClone(remoteOverride: urlText) }
+			Button("Cancel", role: .cancel) { urlText = "" }
+			Button(confirmTitle) { startClone(remoteOverride: urlText) }
+				.disabled(urlText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 		} message: {
-			Text("Enter the git remote URL for “\(repository.name)”.")
+			Text("Enter the git remote URL to clone “\(repository.name)”.")
 		}
 	}
 
 	private var hasKnownRemote: Bool {
 		repository.remoteURL?.isEmpty == false
+	}
+
+	private var actionTitle: String {
+		status.kind == .error ? "Change URL…" : "Create"
+	}
+
+	private var confirmTitle: String {
+		status.kind == .error ? "Retry" : "Create"
+	}
+
+	private var actionHelp: String {
+		status.kind == .error
+			? "Enter a new remote URL and try cloning again"
+			: "Clone, check out, and update this repository"
 	}
 
 	private var detailText: String {
@@ -65,13 +81,17 @@ struct MissingRepositoryRowView: View {
 		status.kind == .error ? .red : .secondary
 	}
 
-	private func createTapped() {
-		if hasKnownRemote {
-			startClone(remoteOverride: nil)
+	private func primaryActionTapped() {
+		if status.kind == .error || !hasKnownRemote {
+			promptForURL()
 		} else {
-			urlText = ""
-			isPrompting = true
+			startClone(remoteOverride: nil)
 		}
+	}
+
+	private func promptForURL() {
+		if urlText.isEmpty { urlText = repository.remoteURL ?? "" }
+		isPrompting = true
 	}
 
 	private func startClone(remoteOverride: String?) {
