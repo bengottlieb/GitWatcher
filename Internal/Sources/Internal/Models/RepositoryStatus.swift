@@ -7,7 +7,7 @@ import Foundation
 
 public struct RepositoryStatus: Sendable, Equatable, Codable {
 	public enum Kind: String, Sendable, Codable {
-		case unknown, checking, clean, noRemote
+		case unknown, checking, cloning, clean, noRemote
 		case pulled, discardedAndPulled
 		case needsPush, dirty, diverged, error
 	}
@@ -18,6 +18,7 @@ public struct RepositoryStatus: Sendable, Equatable, Codable {
 	public var dirtyFiles: [String] = []
 	public var branch: String = ""
 	public var remote: String = ""
+	public var remoteURL: String?
 	public var message: String?
 	public var lastChecked: Date?
 	public var lastCommitDate: Date?
@@ -34,7 +35,7 @@ public struct RepositoryStatus: Sendable, Equatable, Codable {
 		switch kind {
 		case .needsPush, .dirty, .diverged, .error: 0
 		case .pulled, .discardedAndPulled: 1
-		case .clean, .noRemote, .unknown, .checking: 2
+		case .clean, .noRemote, .unknown, .checking, .cloning: 2
 		}
 	}
 }

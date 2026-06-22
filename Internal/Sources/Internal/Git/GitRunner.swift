@@ -18,6 +18,12 @@ struct GitRunner: Sendable {
 		return remotes.first.flatMap { $0.isEmpty ? nil : $0 }
 	}
 
+	func remoteURL(name: String) async throws -> String? {
+		let out = try await run("remote", "get-url", name)
+		let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
+		return trimmed.isEmpty ? nil : trimmed
+	}
+
 	func currentBranch() async throws -> String {
 		let out = try await run("rev-parse", "--abbrev-ref", "HEAD")
 		return out.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -24,6 +24,7 @@ struct RepositoryInspector: Sendable {
 				return status
 			}
 			status.remote = remote
+			status.remoteURL = try? await runner.remoteURL(name: remote)
 			try await runner.fetch(remote: remote)
 
 			let hasRemoteBranch = try await runner.remoteBranchExists(

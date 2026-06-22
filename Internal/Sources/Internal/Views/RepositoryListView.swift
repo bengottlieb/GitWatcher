@@ -23,9 +23,13 @@ struct RepositoryListView: View {
 		return result
 	}
 
+	private var missingRepos: [Repository] {
+		monitor.missingRepositories()
+	}
+
 	var body: some View {
 		Group {
-			if displayedRepos.isEmpty {
+			if displayedRepos.isEmpty && missingRepos.isEmpty {
 				EmptyRepositoriesView()
 			} else {
 				ScrollViewReader { proxy in
@@ -39,6 +43,18 @@ struct RepositoryListView: View {
 							.tag(repo.id)
 						}
 						.onDelete(perform: deleteRepositories)
+						if !missingRepos.isEmpty {
+							Section("Missing") {
+								ForEach(missingRepos) { repo in
+									MissingRepositoryRowView(
+										repository: repo,
+										status: monitor.status(for: repo),
+										monitor: monitor
+									)
+									.tag(repo.id)
+								}
+							}
+						}
 					}
 					.tint(.accentColor.opacity(0.35))
 					.focused($isListFocused)
@@ -115,7 +131,8 @@ struct RepositoryListView: View {
 
 	private func activateSelectedRepository(withOption: Bool) -> KeyPress.Result {
 		guard let id = selection,
-		      let repo = monitor.repositories.first(where: { $0.id == id }) else {
+		      let repo = monitor.repositories.first(where: { $0.id == id }),
+		      repo.existsOnDisk else {
 			return .ignored
 		}
 		typeAheadBuffer = ""

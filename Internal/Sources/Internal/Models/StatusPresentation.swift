@@ -10,6 +10,7 @@ public extension RepositoryStatus {
 		switch kind {
 		case .unknown: "Not checked"
 		case .checking: "Checking…"
+		case .cloning: "Cloning…"
 		case .clean: "Up to date"
 		case .noRemote: "No remote"
 		case .pulled: "Pulled \(remoteAhead) commit\(remoteAhead == 1 ? "" : "s")"
@@ -25,6 +26,7 @@ public extension RepositoryStatus {
 		switch kind {
 		case .unknown: "questionmark.circle"
 		case .checking: "arrow.triangle.2.circlepath"
+		case .cloning: "arrow.down.circle"
 		case .clean, .pulled, .discardedAndPulled: "checkmark.circle.fill"
 		case .noRemote: "icloud.slash"
 		case .needsPush: "arrow.up.circle.fill"
@@ -37,7 +39,7 @@ public extension RepositoryStatus {
 	var tint: Color {
 		switch kind {
 		case .clean, .pulled, .discardedAndPulled: .green
-		case .needsPush: .blue
+		case .needsPush, .cloning: .blue
 		case .dirty: .orange
 		case .diverged, .error: .red
 		case .noRemote: .secondary

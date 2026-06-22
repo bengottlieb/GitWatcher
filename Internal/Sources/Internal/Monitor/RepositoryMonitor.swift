@@ -26,6 +26,7 @@ public final class RepositoryMonitor {
 	}
 
 	@ObservationIgnored private var suppressPersist = false
+	@ObservationIgnored private var cloningIDs: Set<UUID> = []
 	@ObservationIgnored nonisolated(unsafe) private var externalChangeToken: NSObjectProtocol?
 	@ObservationIgnored nonisolated(unsafe) private var wakeObservers: [NSObjectProtocol] = []
 	@ObservationIgnored private var autoRefreshTask: Task<Void, Never>?
@@ -127,6 +128,12 @@ public final class RepositoryMonitor {
 		}
 	}
 
+	public func missingRepositories() -> [Repository] {
+		repositories
+			.filter { !$0.existsOnDisk }
+			.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+	}
+
 	public func addRepository(at url: URL) {
 		guard !repositories.contains(where: { $0.url == url }) else { return }
 		let repo = Repository(url: url)
@@ -164,9 +171,52 @@ public final class RepositoryMonitor {
 
 	public func refresh(repositoryID id: UUID) async {
 		guard let repo = repositories.first(where: { $0.id == id }) else { return }
+		guard !cloningIDs.contains(id), repo.existsOnDisk else { return }
 		statuses[id] = RepositoryStatus(kind: .checking)
 		let updater = RepositoryUpdater(repository: repo, whitelist: whitelist)
-		statuses[id] = await updater.update()
+		let status = await updater.update()
+		statuses[id] = status
+		if let url = status.remoteURL { rememberRemoteURL(url, forID: id) }
+	}
+
+	public func cloneAndRefresh(repositoryID id: UUID, remoteURLOverride: String? = nil) async {
+		guard let repo = repositories.first(where: { $0.id == id }) else { return }
+		let override = remoteURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard let remoteURL = Self.resolveCloneURL(override: override, persisted: repo.remoteURL) else {
+			statuses[id] = RepositoryStatus(kind: .error, message: "No remote URL is known for this repository.")
+			return
+		}
+		guard await performClone(repo, remoteURL: remoteURL) else { return }
+		if let override, !override.isEmpty { rememberRemoteURL(override, forID: id) }
+		await refresh(repositoryID: id)
+	}
+
+	private func performClone(_ repo: Repository, remoteURL: String) async -> Bool {
+		cloningIDs.insert(repo.id)
+		defer { cloningIDs.remove(repo.id) }
+		statuses[repo.id] = RepositoryStatus(kind: .cloning)
+		do {
+			try await RepositoryCloner(repository: repo, remoteURL: remoteURL).clone()
+			return true
+		} catch {
+			let message = (error as? GitError)?.stderr ?? error.localizedDescription
+			statuses[repo.id] = RepositoryStatus(kind: .error, message: message)
+			return false
+		}
+	}
+
+	nonisolated static func resolveCloneURL(override: String?, persisted: String?) -> String? {
+		let trimmed = override?.trimmingCharacters(in: .whitespacesAndNewlines)
+		if let trimmed, !trimmed.isEmpty { return trimmed }
+		if let persisted, !persisted.isEmpty { return persisted }
+		return nil
+	}
+
+	private func rememberRemoteURL(_ url: String, forID id: UUID) {
+		guard let index = repositories.firstIndex(where: { $0.id == id }),
+		      repositories[index].remoteURL != url else { return }
+		repositories[index].remoteURL = url
+		persistRepositories()
 	}
 
 	public func push(repositoryID id: UUID) async {
