@@ -62,3 +62,40 @@ import Testing
 		#expect(decoded == original)
 	}
 }
+
+@Suite struct RepositoryListPartitionTests {
+	@Test @MainActor func staleDisplayOrderDoesNotShowMissingRepositoryAsExisting() throws {
+		let root = FileManager.default.temporaryDirectory
+			.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+		let existingURL = root.appending(path: "Existing", directoryHint: .isDirectory)
+		let missingURL = root.appending(path: "Missing", directoryHint: .isDirectory)
+		try FileManager.default.createDirectory(at: existingURL, withIntermediateDirectories: true)
+		defer { try? FileManager.default.removeItem(at: root) }
+
+		let existing = Repository(url: existingURL)
+		let missing = Repository(url: missingURL)
+		let displayed = RepositoryListView.displayedRepositories(
+			from: [existing, missing],
+			displayOrder: [missing.id, existing.id]
+		)
+
+		#expect(displayed.map(\.id) == [existing.id])
+	}
+
+	@Test @MainActor func cloningRepositoryIsNotShownAsExisting() throws {
+		let root = FileManager.default.temporaryDirectory
+			.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+		let cloningURL = root.appending(path: "Cloning", directoryHint: .isDirectory)
+		try FileManager.default.createDirectory(at: cloningURL, withIntermediateDirectories: true)
+		defer { try? FileManager.default.removeItem(at: root) }
+
+		let cloning = Repository(url: cloningURL)
+		let displayed = RepositoryListView.displayedRepositories(
+			from: [cloning],
+			displayOrder: [cloning.id],
+			status: { _ in RepositoryStatus(kind: .cloning) }
+		)
+
+		#expect(displayed.isEmpty)
+	}
+}

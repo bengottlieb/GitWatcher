@@ -181,6 +181,7 @@ public final class RepositoryMonitor {
 
 	public func cloneAndRefresh(repositoryID id: UUID, remoteURLOverride: String? = nil) async {
 		guard let repo = repositories.first(where: { $0.id == id }) else { return }
+		guard !cloningIDs.contains(id) else { return }
 		let override = remoteURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard let remoteURL = Self.resolveCloneURL(override: override, persisted: repo.remoteURL) else {
 			statuses[id] = RepositoryStatus(kind: .error, message: "No remote URL is known for this repository.")

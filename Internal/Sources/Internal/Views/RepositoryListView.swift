@@ -16,15 +16,17 @@ struct RepositoryListView: View {
 	@Environment(\.controlActiveState) private var activeState
 
 	private var displayedRepos: [Repository] {
-		let byID = Dictionary(uniqueKeysWithValues: monitor.repositories.map { ($0.id, $0) })
-		var result = displayOrder.compactMap { byID[$0] }
-		let seen = Set(displayOrder)
-		result.append(contentsOf: monitor.repositories.filter { !seen.contains($0.id) && $0.existsOnDisk })
-		return result
+		Self.displayedRepositories(
+			from: monitor.repositories,
+			displayOrder: displayOrder,
+			status: monitor.status(for:)
+		)
 	}
 
 	private var missingRepos: [Repository] {
-		monitor.missingRepositories()
+		monitor.repositories
+			.filter { !$0.existsOnDisk || monitor.status(for: $0).kind == .cloning }
+			.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 	}
 
 	var body: some View {
@@ -56,7 +58,7 @@ struct RepositoryListView: View {
 							}
 						}
 					}
-					.tint(.accentColor.opacity(0.35))
+					.tint(.accentColor)
 					.focused($isListFocused)
 					.onKeyPress(phases: .down, action: handleKeyPress)
 					.onAppear {
@@ -94,6 +96,22 @@ struct RepositoryListView: View {
 
 	private func rebuildOrder() {
 		displayOrder = monitor.sortedRepositories(mode: sortMode).map(\.id)
+	}
+
+	static func displayedRepositories(
+		from repositories: [Repository],
+		displayOrder: [UUID],
+		status: (Repository) -> RepositoryStatus = { _ in .unknown }
+	) -> [Repository] {
+		let byID = Dictionary(uniqueKeysWithValues: repositories.map { ($0.id, $0) })
+		var result = displayOrder
+			.compactMap { byID[$0] }
+			.filter { $0.existsOnDisk && status($0).kind != .cloning }
+		let seen = Set(displayOrder)
+		result.append(contentsOf: repositories.filter {
+			!seen.contains($0.id) && $0.existsOnDisk && status($0).kind != .cloning
+		})
+		return result
 	}
 
 	private func focusListSoon() {
