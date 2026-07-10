@@ -20,6 +20,9 @@ struct RepositoryRowView: View {
 					.font(.body)
 					.lineLimit(1)
 					.truncationMode(.middle)
+				if status.hasRecentCommit {
+					RecentActivityBadge()
+				}
 				Text(status.summary)
 					.font(.caption)
 					.foregroundStyle(status.tint)

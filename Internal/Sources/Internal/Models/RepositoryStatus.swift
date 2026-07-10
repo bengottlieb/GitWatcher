@@ -27,6 +27,10 @@ public struct RepositoryStatus: Sendable, Equatable, Codable {
 
 	public var needsPush: Bool { kind == .needsPush }
 	public var isBusy: Bool { kind == .checking }
+	public var hasRecentCommit: Bool {
+		guard let lastCommitDate else { return false }
+		return lastCommitDate.timeIntervalSinceNow > -24 * 60 * 60
+	}
 	public var hasProblem: Bool {
 		kind == .diverged || kind == .dirty || kind == .error
 	}

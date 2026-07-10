@@ -57,39 +57,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	private func trackIconState() {
 		updateStatusIcon()
 		withObservationTracking {
-			_ = RepositoryMonitor.shared.hasProblems
-			_ = RepositoryMonitor.shared.hasPendingPushes
-			_ = RepositoryMonitor.shared.isRefreshing
+			_ = RepositoryMonitor.shared.attentionCount
 		} onChange: { [weak self] in
-			Task { @MainActor in
+			Task { @MainActor [weak self] in
 				self?.trackIconState()
 			}
 		}
 	}
 
 	private func updateStatusIcon() {
-		let monitor = RepositoryMonitor.shared
-		let (symbol, tint): (String, NSColor?)
-		if monitor.hasProblems {
-			symbol = "exclamationmark.arrow.triangle.2.circlepath"
-			tint = .systemRed
-		} else if monitor.hasPendingPushes {
-			symbol = "arrow.up.circle.fill"
-			tint = .systemBlue
-		} else {
-			symbol = "arrow.triangle.2.circlepath"
-			tint = nil
-		}
-		guard let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "GitWatcher") else { return }
-		if let tint {
-			let config = NSImage.SymbolConfiguration(paletteColors: [tint])
-			let image = base.withSymbolConfiguration(config) ?? base
-			image.isTemplate = false
-			statusItem?.button?.image = image
-		} else {
-			base.isTemplate = true
-			statusItem?.button?.image = base
-		}
+		let count = RepositoryMonitor.shared.attentionCount
+		statusItem?.button?.image = StatusItemIcon.image(
+			badgeCount: count,
+			appearance: statusItem?.button?.effectiveAppearance
+		)
 	}
 
 	@objc private func statusItemClicked(_ sender: NSStatusBarButton) {

@@ -108,6 +108,10 @@ public final class RepositoryMonitor {
 		statuses.values.contains { $0.hasProblem }
 	}
 
+	public var attentionCount: Int {
+		statuses.values.filter { $0.needsPush || $0.hasProblem }.count
+	}
+
 	public func sortedRepositories(mode: SortMode) -> [Repository] {
 		let existing = repositories.filter(\.existsOnDisk)
 		switch mode {
